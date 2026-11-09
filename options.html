@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>下载守护 · 设置</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <img src="icons/icon128.png" alt="" width="52" height="52" />
+        <div>
+          <h1>下载守护</h1>
+          <p>下载完成后自动计算 MD5 / SHA-256，并用 VirusTotal 等在线引擎查毒</p>
+        </div>
+        <span id="save-state" class="save-state"></span>
+      </header>
+
+      <!-- 1. 权限 -->
+      <section class="card" id="sec-perm">
+        <div class="card-head">
+          <h2>① 读取下载来源</h2>
+          <span id="perm-state" class="tag">检测中…</span>
+        </div>
+        <p class="desc">
+          浏览器扩展无法直接访问你硬盘上的文件，因此本扩展会在下载完成后
+          <b>重新以只读方式拉取一次该下载链接</b>，边读边算哈希（不落盘、不缓存、读完即丢）。
+          这需要你授权访问下载来源站点。
+        </p>
+        <div class="row-actions">
+          <button id="btn-grant" class="btn primary" type="button">授权读取下载来源</button>
+          <button id="btn-revoke" class="btn" type="button">撤销授权</button>
+        </div>
+        <p class="hint">
+          该权限为可选项，只在你点击后才会申请。不授权时插件仍可记录下载信息，但无法计算哈希。
+        </p>
+      </section>
+
+      <!-- 2. API Key -->
+      <section class="card">
+        <div class="card-head">
+          <h2>② VirusTotal API Key</h2>
+          <span id="key-state" class="tag">未配置</span>
+        </div>
+        <p class="desc">
+          用于自动查询文件是否已被各大引擎检出。<b>查询只发送哈希值，不发送文件内容。</b>
+          免费注册即可获得 Key（免费额度：4 次/分钟、500 次/天、15.5K 次/月）。
+        </p>
+        <div class="field">
+          <input id="api-key" type="password" spellcheck="false" autocomplete="off"
+                 placeholder="粘贴你的 VirusTotal API Key（64 位十六进制字符）" />
+          <button id="btn-toggle-key" class="btn" type="button">显示</button>
+        </div>
+        <div class="row-actions">
+          <button id="btn-verify" class="btn" type="button">验证 Key</button>
+          <a class="btn link" href="https://www.virustotal.com/gui/my-apikey" target="_blank" rel="noopener">
+            获取免费 API Key ↗
+          </a>
+        </div>
+        <p id="key-msg" class="hint"></p>
+      </section>
+
+      <!-- 3. 扫描策略 -->
+      <section class="card">
+        <div class="card-head"><h2>③ 扫描策略</h2></div>
+
+        <label class="switch-row">
+          <span>
+            <b>下载完成后自动查毒</b>
+            <em>关闭后不再自动扫描，仅保留历史记录</em>
+          </span>
+          <input id="auto-scan" type="checkbox" class="switch" />
+        </label>
+
+        <label class="switch-row">
+          <span>
+            <b>允许扫描内网 / 本机地址</b>
+            <em>默认关闭。开启后可扫描 NAS、内网下载站，但扩展也就能访问你的局域网地址，请按需开启</em>
+          </span>
+          <input id="allow-private" type="checkbox" class="switch" />
+        </label>
+
+        <div class="grid">
+          <label class="field-col">
+            <span class="label">自动计算哈希的大小上限</span>
+            <select id="max-hash">
+              <option value="67108864">64 MB</option>
+              <option value="134217728">128 MB</option>
+              <option value="268435456">256 MB（推荐）</option>
+              <option value="536870912">512 MB</option>
+              <option value="1073741824">1 GB</option>
+            </select>
+            <em class="hint">超过上限的文件将跳过自动扫描，避免占用过多带宽</em>
+          </label>
+
+          <label class="field-col">
+            <span class="label">VirusTotal 请求间隔</span>
+            <select id="min-interval">
+              <option value="15000">15 秒（免费 Key 推荐）</option>
+              <option value="8000">8 秒</option>
+              <option value="4000">4 秒</option>
+              <option value="1000">1 秒（付费 Key）</option>
+            </select>
+            <em class="hint">免费 Key 限制 4 次/分钟，间隔过小会触发限流</em>
+          </label>
+
+          <label class="field-col">
+            <span class="label">拉取超时</span>
+            <select id="fetch-timeout">
+              <option value="60000">60 秒</option>
+              <option value="120000">120 秒（推荐）</option>
+              <option value="300000">300 秒</option>
+            </select>
+            <em class="hint">下载源响应过慢时会自动放弃并给出提示</em>
+          </label>
+
+          <label class="field-col">
+            <span class="label">最多保留记录</span>
+            <select id="keep-records">
+              <option value="30">30 条</option>
+              <option value="100">100 条</option>
+              <option value="200">200 条</option>
+            </select>
+            <em class="hint">仅保存在本机，超出后自动清理最旧记录</em>
+          </label>
+        </div>
+
+        <label class="field-col full">
+          <span class="label">永不访问的主机</span>
+          <input id="host-blocklist" type="text" spellcheck="false" placeholder="例如：bank.com, intranet.corp（含子域，留空表示不限制）" />
+          <em class="hint">命中列表的主机不会被扩展主动请求，适合排除网银、内网办公系统等敏感站点</em>
+        </label>
+
+        <label class="field-col full">
+          <span class="label">不扫描的文件类型</span>
+          <input id="excluded" type="text" spellcheck="false" placeholder="例如：iso, dmg, vhd（留空表示全部扫描）" />
+          <em class="hint">用英文逗号分隔扩展名，常用于跳过体积巨大的镜像文件</em>
+        </label>
+      </section>
+
+      <!-- 4. 通知 -->
+      <section class="card">
+        <div class="card-head"><h2>④ 通知</h2></div>
+
+        <label class="switch-row">
+          <span>
+            <b>检出威胁时弹窗提醒</b>
+            <em>结果写入系统通知中心，点击可跳转到详情</em>
+          </span>
+          <input id="notify" type="checkbox" class="switch" />
+        </label>
+
+        <label class="switch-row">
+          <span>
+            <b>安全文件也提醒</b>
+            <em>默认关闭，避免频繁打扰</em>
+          </span>
+          <input id="notify-clean" type="checkbox" class="switch" />
+        </label>
+
+        <label class="switch-row">
+          <span>
+            <b>检出威胁时自动打开 VirusTotal 报告页</b>
+            <em>方便查看具体是哪些引擎报毒</em>
+          </span>
+          <input id="auto-open" type="checkbox" class="switch" />
+        </label>
+      </section>
+
+      <!-- 5. 数据 -->
+      <section class="card">
+        <div class="card-head">
+          <h2>⑤ 数据管理</h2>
+          <span id="data-state" class="tag">0 条记录</span>
+        </div>
+        <p class="desc">所有扫描记录仅保存在本机浏览器存储中，不会上传到任何服务器。</p>
+        <div class="row-actions">
+          <button id="btn-export" class="btn" type="button">导出记录（JSON）</button>
+          <button id="btn-clear" class="btn danger" type="button">清空全部记录</button>
+        </div>
+      </section>
+
+      <!-- 6. 说明 -->
+      <section class="card about">
+        <div class="card-head"><h2>关于与免责声明</h2></div>
+        <ul>
+          <li>
+            本扩展是<b>辅助判断工具</b>，结果来自 VirusTotal 聚合的第三方引擎，不能替代专业杀毒软件；
+            未检出不等于绝对安全。
+          </li>
+          <li>
+            默认只把 <b>MD5 / SHA-256 哈希</b>发送给 VirusTotal。只有你主动点击「上传查毒」时，文件内容才会被上传。
+          </li>
+          <li>
+            哈希通过重新读取下载链接计算。若下载需要登录、链接已过期或来源返回了错误页面，
+            计算出的哈希可能与本地文件不一致，界面会给出警示。
+          </li>
+          <li>
+            <b>默认不携带任何 Cookie。</b>只有你在某条记录上点击「携带登录信息重试」并确认后，
+            该次请求才会带上该站点的登录态；且<b>带登录态的请求不跟随任何重定向</b>，
+            避免凭证被带到跳转目标。
+          </li>
+          <li>
+            VirusTotal 免费 API 仅限非商业用途；商业场景请遵守其
+            <a href="https://www.virustotal.com/gui/terms-of-service" target="_blank" rel="noopener">服务条款</a>。
+          </li>
+        </ul>
+        <p class="version">版本 <span id="version"></span> · Manifest V3</p>
+      </section>
+    </div>
+
+    <div id="toast" class="toast" hidden></div>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
